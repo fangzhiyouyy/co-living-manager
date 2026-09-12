@@ -33,7 +33,6 @@
 
   /* Header */
   header{
-    position:sticky;top:0;z-index:20;
     background:linear-gradient(135deg,var(--brand),var(--brand2));
     color:#fff;padding:18px 20px 60px;border-radius:0 0 26px 26px;
   }
@@ -180,6 +179,17 @@
   .settle-card{border-left:4px solid var(--brand)}
   .settle-line{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:14px}
   .settle-line .arrow{color:var(--brand);font-weight:700;margin:0 6px}
+
+  /* charts */
+  .legend-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px}
+  .legend-item .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .legend-item .lg-name{flex:1;color:#5c564c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .legend-item .lg-val{color:var(--muted);font-size:12px;flex-shrink:0}
+  .bar-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+  .bar-label{width:64px;font-size:13px;font-weight:600;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{flex:1;height:12px;background:#F1EEE8;border-radius:6px;overflow:hidden}
+  .bar-track i{display:block;height:100%;border-radius:6px;transition:width .4s}
+  .bar-val{width:64px;text-align:right;font-size:13px;font-weight:700;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -190,12 +200,12 @@
 <script>
 /* ============ 数据模型 ============ */
 const CATS = [
-  {id:'rent',name:'房租',icon:'🏠',color:'#FFF1E6'},
-  {id:'elec',name:'水电燃气',icon:'💡',color:'#E9F1FC'},
-  {id:'net',name:'网费',icon:'📶',color:'#E8F8EF'},
-  {id:'grocery',name:'日用品',icon:'🧻',color:'#FDEBEB'},
-  {id:'food',name:'聚餐',icon:'🍜',color:'#FFF7E0'},
-  {id:'other',name:'其他',icon:'📦',color:'#F1EEE8'},
+  {id:'rent',name:'房租',icon:'🏠',color:'#FFF1E6',solid:'#FF7A45'},
+  {id:'elec',name:'水电燃气',icon:'💡',color:'#E9F1FC',solid:'#4A90E2'},
+  {id:'net',name:'网费',icon:'📶',color:'#E8F8EF',solid:'#3BB878'},
+  {id:'grocery',name:'日用品',icon:'🧻',color:'#FDEBEB',solid:'#F0A23B'},
+  {id:'food',name:'聚餐',icon:'🍜',color:'#FFF7E0',solid:'#E8669E'},
+  {id:'other',name:'其他',icon:'📦',color:'#F1EEE8',solid:'#9A948A'},
 ];
 const AVATARS = ['🐱','🐶','🐰','🐻','🐼','🦊','🐨','🐯','🐹','🦁','🐸','🐷'];
 const COLORS = ['#FF7A45','#4A90E2','#3BB878','#8E6FE8','#F0A23B','#E8669E','#35B5C4','#7A6AF0'];
@@ -266,6 +276,54 @@ function persist(){save(state);render();}
 function mateById(id){return state.roommates.find(m=>m.id===id);}
 function catById(id){return CATS.find(c=>c.id===id)||CATS[5];}
 function fmt(n){return '¥'+Number(n).toFixed(Number.isInteger(Number(n))?0:2);}
+
+/* ============ 图表 ============ */
+function categoryData(){
+  const map={};
+  state.expenses.forEach(e=>{map[e.cat]=(map[e.cat]||0)+e.amount;});
+  return Object.entries(map).map(([cat,value])=>{
+    const c=catById(cat);
+    return {name:c.name,icon:c.icon,value,color:c.solid};
+  }).sort((a,b)=>b.value-a.value);
+}
+function donutSVG(data){
+  const total=data.reduce((s,d)=>s+d.value,0);
+  const R=40,C=2*Math.PI*R;
+  let offset=0;
+  const segs=data.map(d=>{
+    const frac=d.value/total, len=frac*C;
+    const off=-offset; offset+=len;
+    return `<circle r="${R}" cx="50" cy="50" fill="none" stroke="${d.color}" stroke-width="16" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${off}" transform="rotate(-90 50 50)"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 100 100" style="width:128px;height:128px;flex-shrink:0">${segs}
+    <text x="50" y="47" text-anchor="middle" font-size="10" fill="#9A948A">总支出</text>
+    <text x="50" y="63" text-anchor="middle" font-size="12" font-weight="700" fill="#2C2A26">${fmt(total)}</text>
+  </svg>`;
+}
+function categoryChart(){
+  const data=categoryData();
+  if(!data.length)return '';
+  const total=data.reduce((s,d)=>s+d.value,0);
+  return `<div class="section-title">📊 支出分类占比</div>
+    <div class="card" style="display:flex;align-items:center;gap:18px">
+      ${donutSVG(data)}
+      <div style="flex:1;min-width:0">
+        ${data.map(d=>`<div class="legend-item"><span class="dot" style="background:${d.color}"></span><span class="lg-name">${d.icon} ${d.name}</span><span class="lg-val">${fmt(d.value)} · ${Math.round(d.value/total*100)}%</span></div>`).join('')}
+      </div>
+    </div>`;
+}
+function payerBars(){
+  const rows=state.roommates.map(m=>({
+    m,total:state.expenses.filter(e=>e.payerId===m.id).reduce((s,e)=>s+e.amount,0)
+  }));
+  const max=Math.max(...rows.map(r=>r.total),1);
+  return rows.map(({m,total})=>`
+    <div class="bar-row">
+      <div class="bar-label">${m.avatar} ${m.name}</div>
+      <div class="bar-track"><i style="width:${Math.max(total/max*100, total>0?4:0)}%;background:${m.color}"></i></div>
+      <div class="bar-val">${fmt(total)}</div>
+    </div>`).join('');
+}
 
 /* ============ 计算：AA 结算 ============ */
 function computeBalances(){
@@ -366,6 +424,8 @@ const views={
         <div class="stat purple"><div class="k">📦 待补货</div><div class="v">${low.length}<small> 件</small></div></div>
       </div>
 
+      ${categoryChart()}
+
       <div class="section-title">🧾 最近账单 <button class="link" onclick="go('expense')">查看全部</button></div>
       <div class="card" style="padding:6px 16px">
         ${state.expenses.slice(-3).reverse().map(e=>expenseRow(e)).join('')||empty('还没有账单，点右下角 + 添加')}
@@ -385,6 +445,8 @@ const views={
   expense(){
     const bal=computeBalances();
     return `
+      <div class="section-title">💳 每人垫付金额</div>
+      <div class="card" style="padding:12px 16px">${payerBars()}</div>
       <div class="section-title">⚖️ 本月结余（AA 分摊后）</div>
       <div class="card" style="padding:10px 16px">
         ${state.roommates.map(m=>`
