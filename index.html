@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>合租生活管家</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>" />
+<style>
+  :root{
+    --bg:#F6F3EE;
+    --card:#FFFFFF;
+    --ink:#2C2A26;
+    --muted:#9A948A;
+    --line:#ECE7DE;
+    --brand:#FF7A45;
+    --brand2:#FFB26B;
+    --brand-deep:#F0602E;
+    --green:#3BB878;
+    --red:#F25555;
+    --blue:#4A90E2;
+    --purple:#8E6FE8;
+    --shadow:0 2px 12px rgba(60,50,40,.06);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:520px;margin:0 auto;min-height:100%;padding-bottom:84px;position:relative}
+
+  /* Header */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(135deg,var(--brand),var(--brand2));
+    color:#fff;padding:18px 20px 60px;border-radius:0 0 26px 26px;
+  }
+  .header-top{display:flex;align-items:center;justify-content:space-between}
+  .house-name{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;cursor:pointer}
+  .house-name .edit-hint{font-size:12px;opacity:.8;font-weight:400}
+  .header-badge{background:rgba(255,255,255,.22);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600}
+
+  /* Roommate strip */
+  .mates-strip{
+    display:flex;gap:14px;overflow-x:auto;padding:0 20px;margin-top:-38px;position:relative;z-index:2;scrollbar-width:none;
+  }
+  .mates-strip::-webkit-scrollbar{display:none}
+  .mate-pill{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:58px;cursor:pointer}
+  .mate-avatar{
+    width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:24px;border:3px solid #fff;box-shadow:var(--shadow);background:#fff;
+  }
+  .mate-pill span{font-size:12px;color:var(--ink);font-weight:600;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mate-add .mate-avatar{background:var(--card);color:var(--brand);font-size:28px;font-weight:700;border-style:dashed;border-color:var(--brand)}
+
+  /* Tabs nav */
+  nav.tabs{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;
+    background:rgba(255,255,255,.96);backdrop-filter:blur(10px);
+    display:flex;border-top:1px solid var(--line);z-index:50;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav.tabs .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;
+    color:var(--muted);font-size:11px;cursor:pointer;border:none;background:none;transition:color .15s;
+  }
+  nav.tabs .tab .ic{font-size:22px;line-height:1}
+  nav.tabs .tab.active{color:var(--brand)}
+  nav.tabs .tab.active .ic{transform:translateY(-2px) scale(1.08)}
+
+  /* Sections */
+  main{padding:18px 16px}
+  .section-title{font-size:15px;font-weight:700;margin:22px 4px 12px;display:flex;align-items:center;justify-content:space-between}
+  .section-title .sub{font-size:12px;color:var(--muted);font-weight:400}
+  .link{color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;border:none;background:none}
+
+  /* Cards */
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .stat .k{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .stat .v{font-size:26px;font-weight:800;margin-top:6px}
+  .stat .v small{font-size:13px;font-weight:600;color:var(--muted)}
+  .stat.orange .v{color:var(--brand)} .stat.green .v{color:var(--green)}
+  .stat.blue .v{color:var(--blue)} .stat.purple .v{color:var(--purple)}
+
+  /* Lists */
+  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .ic-box{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+  .row .body{flex:1;min-width:0}
+  .row .body .t{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .row .body .d{font-size:12px;color:var(--muted);margin-top:2px}
+  .row .right{text-align:right;flex-shrink:0}
+  .row .right .amt{font-weight:700;font-size:15px}
+  .row .right .amt.pos{color:var(--green)} .row .right .amt.neg{color:var(--red)}
+
+  /* Badges & chips */
+  .chip{font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;white-space:nowrap}
+  .chip.warn{background:#FFF1E6;color:var(--brand-deep)}
+  .chip.ok{background:#E8F8EF;color:var(--green)}
+  .chip.mut{background:#F1EEE8;color:var(--muted)}
+  .chip.red{background:#FDEBEB;color:var(--red)}
+  .chip.blue{background:#E9F1FC;color:var(--blue)}
+  .tag{font-size:11px;color:var(--muted)}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;
+    font-weight:600;font-size:14px;border-radius:14px;padding:12px 18px;transition:opacity .15s,transform .1s}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;width:100%}
+  .btn-ghost{background:#F4F0E9;color:var(--ink)}
+  .btn-sm{padding:7px 12px;font-size:12px;border-radius:10px}
+
+  .fab{
+    position:fixed;bottom:86px;right:calc(50% - 260px + 20px);width:54px;height:54px;border-radius:50%;
+    background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:28px;border:none;
+    box-shadow:0 6px 20px rgba(255,122,69,.4);cursor:pointer;z-index:40;display:flex;align-items:center;justify-content:center;
+  }
+  @media(max-width:520px){.fab{right:20px}}
+
+  /* Empty state */
+  .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty .big{font-size:44px;margin-bottom:10px}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:flex-end;justify-content:center;
+    animation:fade .2s}
+  @media(min-width:520px){.overlay{align-items:center}}
+  .sheet{background:#fff;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px 20px 28px;
+    max-height:88vh;overflow-y:auto;animation:up .25s}
+  @media(min-width:520px){.sheet{border-radius:24px}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
+  .sheet h3{font-size:17px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+  .sheet .x{cursor:pointer;color:var(--muted);font-size:22px;border:none;background:none}
+  .field{margin-bottom:14px}
+  .field label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  .field input,.field textarea,.field select{
+    width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;
+    font-family:inherit;background:#FBF9F6;outline:none;transition:border .15s;
+  }
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--brand);background:#fff}
+  .field textarea{resize:none;min-height:72px}
+
+  /* Choice chips */
+  .choices{display:flex;flex-wrap:wrap;gap:8px}
+  .choice{border:1.5px solid var(--line);background:#FBF9F6;border-radius:20px;padding:7px 13px;font-size:13px;
+    cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:500;transition:all .15s}
+  .choice.on{border-color:var(--brand);background:#FFF1E6;color:var(--brand-deep);font-weight:600}
+
+  /* Toasts */
+  #toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-20px);background:#2C2A26;color:#fff;
+    padding:10px 18px;border-radius:12px;font-size:13px;z-index:100;opacity:0;transition:all .3s;pointer-events:none}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* duty schedule */
+  .duty-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .duty-row:last-child{border-bottom:none}
+  .duty-day{width:38px;height:38px;border-radius:12px;background:#F4F0E9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+  .duty-day.today{background:var(--brand);color:#fff}
+  .duty-task{flex:1;min-width:0}
+  .duty-task .t{font-weight:600;font-size:14px}
+  .duty-task .d{font-size:12px;color:var(--muted)}
+  .duty-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;transition:all .15s}
+  .duty-check.done{background:var(--green);border-color:var(--green)}
+
+  /* item qty stepper */
+  .stepper{display:flex;align-items:center;gap:8px}
+  .stepper button{width:30px;height:30px;border-radius:9px;border:none;background:#F4F0E9;font-size:18px;cursor:pointer;font-weight:700;color:var(--ink)}
+  .stepper .qty{font-weight:700;min-width:30px;text-align:center;font-size:16px}
+
+  /* progress bar for rules */
+  .bar{height:6px;background:#F1EEE8;border-radius:6px;overflow:hidden;margin-top:8px}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:6px;transition:width .3s}
+
+  .settle-card{border-left:4px solid var(--brand)}
+  .settle-line{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:14px}
+  .settle-line .arrow{color:var(--brand);font-weight:700;margin:0 6px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<div id="overlay-root"></div>
+
+<script>
+/* ============ 数据模型 ============ */
+const CATS = [
+  {id:'rent',name:'房租',icon:'🏠',color:'#FFF1E6'},
+  {id:'elec',name:'水电燃气',icon:'💡',color:'#E9F1FC'},
+  {id:'net',name:'网费',icon:'📶',color:'#E8F8EF'},
+  {id:'grocery',name:'日用品',icon:'🧻',color:'#FDEBEB'},
+  {id:'food',name:'聚餐',icon:'🍜',color:'#FFF7E0'},
+  {id:'other',name:'其他',icon:'📦',color:'#F1EEE8'},
+];
+const AVATARS = ['🐱','🐶','🐰','🐻','🐼','🦊','🐨','🐯','🐹','🦁','🐸','🐷'];
+const COLORS = ['#FF7A45','#4A90E2','#3BB878','#8E6FE8','#F0A23B','#E8669E','#35B5C4','#7A6AF0'];
+
+const TASKS = ['客厅','厨房','卫生间','倒垃圾','阳台','卧室'];
+
+function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3)}
+
+function seed(){
+  const m1={id:uid(),name:'阿泽',avatar:'🐱',color:'#FF7A45'};
+  const m2={id:uid(),name:'小鹿',avatar:'🦊',color:'#4A90E2'};
+  const m3={id:uid(),name:'可可',avatar:'🐼',color:'#3BB878'};
+  return {
+    house:{name:'阳光小窝'},
+    roommates:[m1,m2,m3],
+    expenses:[
+      {id:uid(),title:'6月房租',amount:4500,cat:'rent',payerId:m1.id,participants:[m1.id,m2.id,m3.id],date:'2026-06-01'},
+      {id:uid(),title:'电费',amount:186.5,cat:'elec',payerId:m2.id,participants:[m1.id,m2.id,m3.id],date:'2026-06-08'},
+      {id:uid(),title:'抽纸+洗洁精',amount:68,cat:'grocery',payerId:m3.id,participants:[m1.id,m2.id,m3.id],date:'2026-06-10'},
+      {id:uid(),title:'周末火锅',amount:220,cat:'food',payerId:m1.id,participants:[m1.id,m2.id],date:'2026-06-11'},
+    ],
+    chores:buildWeek([m1,m2,m3]),
+    items:[
+      {id:uid(),name:'抽纸',icon:'🧻',qty:2,unit:'提',min:2,location:'客厅柜子',low:true},
+      {id:uid(),name:'洗洁精',icon:'🧴',qty:1,unit:'瓶',min:1,location:'厨房水槽下',low:true},
+      {id:uid(),name:'垃圾袋',icon:'🗑️',qty:5,unit:'卷',min:2,location:'阳台',low:false},
+      {id:uid(),name:'大米',icon:'🍚',qty:1,unit:'袋',min:1,location:'厨房',low:false},
+    ],
+    rules:[
+      {id:uid(),title:'深夜安静公约',content:'23:00 后请降低音量，不外放音乐，如需加班开会请佩戴耳机。',agreed:[m1.id,m2.id]},
+      {id:uid(),title:'公共区域清洁',content:'使用厨房、卫生间后及时清理，垃圾每周按值日表轮值倾倒。',agreed:[m1.id,m2.id,m3.id]},
+      {id:uid(),title:'带朋友回家',content:'带朋友回家请提前在群里告知，留宿需征得全体室友同意。',agreed:[m1.id]},
+    ]
+  };
+}
+
+function buildWeek(mates){
+  const dayNames=['周一','周二','周三','周四','周五','周六','周日'];
+  const res=[];
+  for(let i=0;i<7;i++){
+    res.push({
+      id:uid(), day:i,
+      task:TASKS[i%TASKS.length],
+      assigneeId:mates[i%mates.length].id,
+      done:i<getTodayDayIndex()
+    });
+  }
+  return res;
+}
+function getTodayDayIndex(){
+  const d=new Date().getDay(); // 0=Sun
+  return d===0?6:d-1; // Mon=0
+}
+
+let state = load();
+function load(){
+  try{
+    const raw=localStorage.getItem('co-living-state');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const s=seed();
+  save(s);
+  return s;
+}
+function save(s){localStorage.setItem('co-living-state',JSON.stringify(s));}
+function persist(){save(state);render();}
+
+function mateById(id){return state.roommates.find(m=>m.id===id);}
+function catById(id){return CATS.find(c=>c.id===id)||CATS[5];}
+function fmt(n){return '¥'+Number(n).toFixed(Number.isInteger(Number(n))?0:2);}
+
+/* ============ 计算：AA 结算 ============ */
+function computeBalances(){
+  const bal={};
+  state.roommates.forEach(m=>bal[m.id]=0);
+  state.expenses.forEach(e=>{
+    const parts=e.participants.length||1;
+    const per=e.amount/parts;
+    bal[e.payerId]=(bal[e.payerId]||0)+e.amount;
+    e.participants.forEach(p=>bal[p]=(bal[p]||0)-per);
+  });
+  // 修正浮点
+  Object.keys(bal).forEach(k=>bal[k]=Math.round(bal[k]*100)/100);
+  return bal;
+}
+function settle(bal){
+  const creditors=[],debtors=[];
+  Object.entries(bal).forEach(([id,amt])=>{
+    if(amt>0.01) creditors.push({id,amt});
+    else if(amt<-0.01) debtors.push({id,amt:-amt});
+  });
+  creditors.sort((a,b)=>b.amt-a.amt);
+  debtors.sort((a,b)=>b.amt-a.amt);
+  const txns=[];
+  let i=0,j=0;
+  while(i<debtors.length && j<creditors.length){
+    const d=debtors[i],c=creditors[j];
+    const m=Math.min(d.amt,c.amt);
+    txns.push({from:d.id,to:c.id,amount:Math.round(m*100)/100});
+    d.amt-=m;c.amt-=m;
+    if(d.amt<0.01)i++;
+    if(c.amt<0.01)j++;
+  }
+  return txns;
+}
+
+/* ============ 渲染 ============ */
+let currentTab='home';
+const tabDefs=[
+  {id:'home',ic:'🏠',label:'首页'},
+  {id:'expense',ic:'💸',label:'费用AA'},
+  {id:'duty',ic:'🧹',label:'值日'},
+  {id:'item',ic:'📦',label:'物品'},
+  {id:'rule',ic:'📜',label:'公约'},
+];
+
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML = headerHTML() + matesStripHTML() + '<main>'+ (views[currentTab]()) +'</main>' + tabsHTML();
+  bindTop();
+}
+
+function headerHTML(){
+  const lowCount=state.items.filter(i=>i.qty<=i.min).length;
+  return `<header>
+    <div class="header-top">
+      <div class="house-name" onclick="editHouse()">🏠 ${state.house.name} <span class="edit-hint">✎</span></div>
+      <div class="header-badge">${state.roommates.length} 位室友</div>
+    </div>
+    ${lowCount?`<div style="margin-top:10px;font-size:12px;opacity:.92">🔔 有 ${lowCount} 件公共物品库存不足</div>`:''}
+  </header>`;
+}
+
+function matesStripHTML(){
+  return `<div class="mates-strip">
+    ${state.roommates.map(m=>`
+      <div class="mate-pill" onclick="editMate('${m.id}')">
+        <div class="mate-avatar" style="background:${m.color}22">${m.avatar}</div>
+        <span>${m.name}</span>
+      </div>`).join('')}
+    <div class="mate-pill mate-add" onclick="editMate()">
+      <div class="mate-avatar">+</div><span>添加</span>
+    </div>
+  </div>`;
+}
+
+function tabsHTML(){
+  return `<nav class="tabs">${tabDefs.map(t=>`
+    <button class="tab ${t.id===currentTab?'active':''}" onclick="go('${t.id}')">
+      <span class="ic">${t.ic}</span>${t.label}
+    </button>`).join('')}
+  </nav>`;
+}
+
+const views={
+  home(){
+    const bal=computeBalances();
+    const mine=bal[state.roommates[0]?.id]||0;
+    const todayIdx=getTodayDayIndex();
+    const todayChore=state.chores.find(c=>c.day===todayIdx);
+    const low=state.items.filter(i=>i.qty<=i.min);
+    const total=state.expenses.reduce((s,e)=>s+e.amount,0);
+    return `
+      <div class="grid2">
+        <div class="stat orange"><div class="k">💰 本月总支出</div><div class="v">${fmt(total)}</div></div>
+        <div class="stat ${mine>=0?'green':'blue'}"><div class="k">⚖️ 我的结余</div><div class="v">${mine>=0?'+':''}${fmt(mine)}</div></div>
+        <div class="stat green"><div class="k">🧹 今日值日</div><div class="v" style="font-size:18px">${todayChore?mateById(todayChore.assigneeId).avatar+' '+mateById(todayChore.assigneeId).name:'—'}</div></div>
+        <div class="stat purple"><div class="k">📦 待补货</div><div class="v">${low.length}<small> 件</small></div></div>
+      </div>
+
+      <div class="section-title">🧾 最近账单 <button class="link" onclick="go('expense')">查看全部</button></div>
+      <div class="card" style="padding:6px 16px">
+        ${state.expenses.slice(-3).reverse().map(e=>expenseRow(e)).join('')||empty('还没有账单，点右下角 + 添加')}
+      </div>
+
+      <div class="section-title">🤝 快速结算 <button class="link" onclick="go('expense')">去结算</button></div>
+      <div class="card settle-card">
+        ${settleHTML()}
+      </div>
+
+      <div class="section-title">🧹 本周值日</div>
+      <div class="card" style="padding:6px 16px">
+        ${state.chores.slice(0,7).map(dutyRow).join('')}
+      </div>
+    `;
+  },
+  expense(){
+    const bal=computeBalances();
+    return `
+      <div class="section-title">⚖️ 本月结余（AA 分摊后）</div>
+      <div class="card" style="padding:10px 16px">
+        ${state.roommates.map(m=>`
+          <div class="settle-line">
+            <span>${m.avatar} ${m.name}</span>
+            <span class="amt ${bal[m.id]>=0?'pos':'neg'}" style="font-weight:700">${bal[m.id]>=0?'应收':'应付'} ${fmt(Math.abs(bal[m.id]))}</span>
+          </div>`).join('')}
+      </div>
+      <div class="section-title">🔄 建议转账</div>
+      <div class="card settle-card">${settleHTML()}</div>
+      <div class="section-title">🧾 全部账单 <span class="sub">共 ${state.expenses.length} 笔</span></div>
+      <div class="card" style="padding:6px 16px">
+        ${state.expenses.slice().reverse().map(e=>expenseRow(e,true)).join('')||empty('还没有账单')}
+      </div>
+    `;
+  },
+  duty(){
+    return `
+      <div class="section-title">🗓️ 本周值日排班
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="rotateWeek()">🔄 下周轮换</button>
+          <button class="btn btn-ghost btn-sm" onclick="addChore()">+ 加任务</button>
+        </div>
+      </div>
+      <div class="card" style="padding:6px 16px">
+        ${state.chores.map(dutyRow).join('')}
+      </div>
+      <div style="height:70px"></div>
+    `;
+  },
+  item(){
+    const low=state.items.filter(i=>i.qty<=i.min);
+    return `
+      ${low.length?`
+      <div class="card" style="background:#FFF1E6;border-left:4px solid var(--brand)">
+        <div style="font-weight:700;font-size:14px;color:var(--brand-deep)">🔔 库存提醒</div>
+        <div style="font-size:13px;margin-top:6px;color:#8a5a3a">
+          ${low.map(i=>`${i.icon} ${i.name} 仅剩 ${i.qty}${i.unit}，建议尽快补充`).join('；')}
+        </div>
+      </div>`:''}
+      <div class="section-title">📦 公共物品 <span class="sub">共 ${state.items.length} 件</span></div>
+      <div class="card" style="padding:6px 16px">
+        ${state.items.map(itemRow).join('')||empty('还没有登记物品')}
+      </div>
+      <div style="height:70px"></div>
+    `;
+  },
+  rule(){
+    return `
+      <div class="section-title">📜 室友公约 <span class="sub">${state.rules.length} 条</span></div>
+      ${state.rules.map(ruleCard).join('')||empty('还没有公约，点右下角 + 创建')}
+      <div style="height:70px"></div>
+    `;
+  }
+};
+
+function empty(msg){return `<div class="empty"><div class="big">🍃</div>${msg}</div>`;}
+
+function expenseRow(e,showDel){
+  const c=catById(e.cat);
+  const payer=mateById(e.payerId);
+  const per=e.amount/(e.participants.length||1);
+  return `<div class="row">
+    <div class="ic-box" style="background:${c.color}">${c.icon}</div>
+    <div class="body">
+      <div class="t">${e.title}</div>
+      <div class="d">${e.date} · ${c.name} · ${payer?payer.avatar:''}${payer?payer.name:''} 垫付 · ${e.participants.length}人均摊</div>
+    </div>
+    <div class="right">
+      <div class="amt">${fmt(e.amount)}</div>
+      <div class="tag">人均 ${fmt(per)}</div>
+      ${showDel?`<button class="link" style="color:var(--muted)" onclick="delExpense('${e.id}')">删除</button>`:''}
+    </div>
+  </div>`;
+}
+
+function settleHTML(){
+  const bal=computeBalances();
+  const txns=settle(bal);
+  if(!txns.length) return `<div style="text-align:center;color:var(--muted);padding:10px">🎉 已全部结清，无需转账</div>`;
+  return txns.map(t=>`
+    <div class="settle-line">
+      <span>${mateById(t.from).avatar} ${mateById(t.from).name}</span>
+      <span><span class="arrow">→</span></span>
+      <span>${mateById(t.to).avatar} ${mateById(t.to).name}</span>
+      <span style="font-weight:700;color:var(--brand)">${fmt(t.amount)}</span>
+    </div>`).join('');
+}
+
+function dutyRow(c){
+  const m=mateById(c.assigneeId);
+  const today=getTodayDayIndex()===c.day;
+  return `<div class="duty-row">
+    <div class="duty-day ${today?'today':''}">${'一二三四五六日'[c.day]}</div>
+    <div class="duty-task">
+      <div class="t">${c.task}</div>
+      <div class="d">${m?m.avatar+' '+m.name:'未分配'}${today?' · 今天':''}</div>
+    </div>
+    <div class="duty-check ${c.done?'done':''}" onclick="toggleChore('${c.id}')">${c.done?'✓':''}</div>
+  </div>`;
+}
+
+function itemRow(it){
+  const low=it.qty<=it.min;
+  return `<div class="row">
+    <div class="ic-box" style="background:${low?'#FDEBEB':'#F4F0E9'}">${it.icon}</div>
+    <div class="body">
+      <div class="t">${it.name} ${low?'<span class="chip red">库存不足</span>':''}</div>
+      <div class="d">📍 ${it.location}${it.low?' · 已提醒':''}</div>
+    </div>
+    <div class="stepper">
+      <button onclick="changeQty('${it.id}',-1)">−</button>
+      <span class="qty">${it.qty}</span>
+      <button onclick="changeQty('${it.id}',1)">+</button>
+      <span class="tag">${it.unit}</span>
+    </div>
+  </div>`;
+}
+
+function ruleCard(r){
+  const pct=Math.round(r.agreed.length/state.roommates.length*100);
+  const mine=state.roommates[0];
+  const iAgree=mine && r.agreed.includes(mine.id);
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+      <div style="font-weight:700;font-size:15px">${r.title}</div>
+      <span class="chip ${pct===100?'ok':'mut'}">${r.agreed.length}/${state.roommates.length} 人同意</span>
+    </div>
+    <div style="font-size:13px;color:#5c564c;margin-top:8px;line-height:1.6">${r.content}</div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+      ${r.agreed.map(id=>{const m=mateById(id);return m?`<span class="chip ok">${m.avatar} ${m.name} ✓</span>`:''}).join('')}
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-sm ${iAgree?'btn-ghost':'btn-primary'}" style="${iAgree?'':'flex:1'}" onclick="toggleAgree('${r.id}')">${iAgree?'已同意 ✓':'同意并签署'}</button>
+      <button class="btn btn-sm btn-ghost" onclick="delRule('${r.id}')">删除</button>
+    </div>
+  </div>`;
+}
+
+/* ============ 交互 ============ */
+window.go=function(t){currentTab=t;render();window.scrollTo(0,0);};
+
+function bindTop(){ /* onclick 已内联 */ }
+
+function openSheet(html){
+  const root=document.getElementById('overlay-root');
+  root.innerHTML=`<div class="overlay" onclick="if(event.target===this)closeSheet()"><div class="sheet">${html}</div></div>`;
+}
+window.closeSheet=function(){document.getElementById('overlay-root').innerHTML='';};
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* --- 室友 --- */
+window.editHouse=function(){
+  openSheet(`
+    <h3>🏠 编辑房子 <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="field"><label>房子名称</label><input id="f-house" value="${state.house.name}"></div>
+    <button class="btn btn-primary" onclick="saveHouse()">保存</button>`);
+};
+window.saveHouse=function(){
+  const v=document.getElementById('f-house').value.trim();
+  if(v){state.house.name=v;persist();toast('已更新房子名称');}
+  closeSheet();
+};
+
+window.editMate=function(id){
+  const m=id?mateById(id):null;
+  openSheet(`
+    <h3>${m?'编辑室友':'添加室友'} <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="field"><label>昵称</label><input id="f-name" value="${m?m.name:''}" placeholder="如：阿泽"></div>
+    <div class="field"><label>头像</label><div class="choices" id="f-avatar">${AVATARS.map(a=>`<span class="choice ${m&&m.avatar===a?'on':''}" onclick="pickAvatar(this,'${a}')">${a}</span>`).join('')}</div></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      ${m?`<button class="btn btn-ghost" style="flex:1" onclick="delMate('${m.id}')">删除</button>`:''}
+      <button class="btn btn-primary" style="flex:1" onclick="saveMate('${id||''}')">保存</button>
+    </div>`);
+  window._avatar=m?m.avatar:AVATARS[state.roommates.length%AVATARS.length];
+};
+window.pickAvatar=function(el,a){window._avatar=a;el.parentElement.querySelectorAll('.choice').forEach(c=>c.classList.remove('on'));el.classList.add('on');};
+window.saveMate=function(id){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('请输入昵称');return;}
+  if(id){const m=mateById(id);m.name=name;m.avatar=window._avatar;}
+  else{
+    state.roommates.push({id:uid(),name,avatar:window._avatar,color:COLORS[state.roommates.length%COLORS.length]});
+  }
+  persist();toast('已保存');closeSheet();
+};
+window.delMate=function(id){
+  state.roommates=state.roommates.filter(m=>m.id!==id);
+  state.expenses.forEach(e=>{e.participants=e.participants.filter(p=>p!==id);if(e.payerId===id)e.payerId=state.roommates[0]?.id;});
+  state.chores.forEach(c=>{if(c.assigneeId===id)c.assigneeId=state.roommates[0]?.id;});
+  state.rules.forEach(r=>r.agreed=r.agreed.filter(p=>p!==id));
+  persist();toast('已删除室友');closeSheet();
+};
+
+/* --- 账单 --- */
+window.addExpense=function(){
+  const m0=state.roommates[0];
+  openSheet(`
+    <h3>💸 记一笔账单 <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="field"><label>事项</label><input id="f-title" placeholder="如：6月房租"></div>
+    <div class="field"><label>金额（元）</label><input id="f-amount" type="number" inputmode="decimal" placeholder="0.00"></div>
+    <div class="field"><label>分类</label><div class="choices" id="f-cat">${CATS.map(c=>`<span class="choice ${c.id==='rent'?'on':''}" onclick="pickCat(this,'${c.id}')">${c.icon} ${c.name}</span>`).join('')}</div></div>
+    <div class="field"><label>垫付人</label><div class="choices" id="f-payer">${state.roommates.map((m,i)=>`<span class="choice ${i===0?'on':''}" onclick="pickOne(this,'payer')" data-id="${m.id}">${m.avatar} ${m.name}</span>`).join('')}</div></div>
+    <div class="field"><label>参与分摊（默认全员 AA）</label><div class="choices" id="f-parts">${state.roommates.map(m=>`<span class="choice on" onclick="togglePart(this)" data-id="${m.id}">${m.avatar} ${m.name}</span>`).join('')}</div></div>
+    <button class="btn btn-primary" onclick="saveExpense()">保存账单</button>`);
+  window._cat='rent';window._payer=state.roommates[0]?.id;
+  window._parts=new Set(state.roommates.map(m=>m.id));
+};
+window.pickCat=function(el,id){window._cat=id;el.parentElement.querySelectorAll('.choice').forEach(c=>c.classList.remove('on'));el.classList.add('on');};
+window.pickOne=function(el,key){window['_'+key]=el.dataset.id;el.parentElement.querySelectorAll('.choice').forEach(c=>c.classList.remove('on'));el.classList.add('on');};
+window.togglePart=function(el){const id=el.dataset.id;if(window._parts.has(id)){window._parts.delete(id);el.classList.remove('on');}else{window._parts.add(id);el.classList.add('on');}};
+window.saveExpense=function(){
+  const title=document.getElementById('f-title').value.trim();
+  const amount=parseFloat(document.getElementById('f-amount').value);
+  if(!title||!amount||amount<=0){toast('请填写事项和金额');return;}
+  const parts=[...window._parts];
+  if(!parts.length){toast('请至少选择一位分摊人');return;}
+  state.expenses.push({
+    id:uid(),title,amount,cat:window._cat,payerId:window._payer,
+    participants:parts,date:new Date().toISOString().slice(0,10)
+  });
+  persist();toast('已记账 ✓');closeSheet();
+};
+window.delExpense=function(id){state.expenses=state.expenses.filter(e=>e.id!==id);persist();toast('已删除');};
+
+/* --- 值日 --- */
+window.toggleChore=function(id){const c=state.chores.find(c=>c.id===id);c.done=!c.done;persist();};
+window.rotateWeek=function(){
+  const mates=state.roommates;
+  const cur=state.chores;
+  state.chores=cur.map((c,i)=>({...c,assigneeId:mates[(i+1)%mates.length].id,done:i<getTodayDayIndex()}));
+  persist();toast('已轮换下周值日');
+};
+window.addChore=function(){
+  openSheet(`
+    <h3>🧹 添加值日任务 <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="field"><label>星期</label><div class="choices" id="f-day">${'一二三四五六日'.split('').map((d,i)=>`<span class="choice ${i===getTodayDayIndex()?'on':''}" onclick="pickOne(this,'day')" data-id="${i}">周${d}</span>`).join('')}</div></div>
+    <div class="field"><label>任务内容</label><input id="f-task" placeholder="如：拖地"></div>
+    <div class="field"><label>负责人</label><div class="choices" id="f-assign">${state.roommates.map((m,i)=>`<span class="choice ${i===0?'on':''}" onclick="pickOne(this,'assign')" data-id="${m.id}">${m.avatar} ${m.name}</span>`).join('')}</div></div>
+    <button class="btn btn-primary" onclick="saveChore()">添加</button>`);
+  window._day=getTodayDayIndex();window._assign=state.roommates[0]?.id;
+};
+window.saveChore=function(){
+  const task=document.getElementById('f-task').value.trim();
+  if(!task){toast('请输入任务');return;}
+  state.chores.push({id:uid(),day:parseInt(window._day),task,assigneeId:window._assign,done:false});
+  state.chores.sort((a,b)=>a.day-b.day);
+  persist();toast('已添加');closeSheet();
+};
+
+/* --- 物品 --- */
+window.addItem=function(){
+  openSheet(`
+    <h3>📦 登记公共物品 <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="field"><label>名称</label><input id="f-name" placeholder="如：抽纸"></div>
+    <div class="field"><label>图标</label><div class="choices" id="f-icon">${['🧻','🧴','🗑️','🍚','🥤','🧂','🫧','🪣','🧽','🍽️','💧','🥛'].map(i=>`<span class="choice" onclick="pickAvatar(this,'${i}')">${i}</span>`).join('')}</div></div>
+    <div class="field"><label>数量</label><input id="f-qty" type="number" value="1"></div>
+    <div class="field"><label>单位</label><input id="f-unit" placeholder="提/瓶/卷/袋" value="件"></div>
+    <div class="field"><label>库存提醒阈值（低于此值提醒）</label><input id="f-min" type="number" value="1"></div>
+    <div class="field"><label>存放位置</label><input id="f-loc" placeholder="如：客厅柜子"></div>
+    <button class="btn btn-primary" onclick="saveItem()">登记</button>`);
+  window._icon='🧻';
+};
+window.saveItem=function(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('请输入名称');return;}
+  state.items.push({
+    id:uid(),name,icon:window._icon,
+    qty:parseInt(document.getElementById('f-qty').value)||1,
+    unit:document.getElementById('f-unit').value.trim()||'件',
+    min:parseInt(document.getElementById('f-min').value)||1,
+    location:document.getElementById('f-loc').value.trim()||'未设置',
+    low:false
+  });
+  persist();toast('已登记');closeSheet();
+};
+window.changeQty=function(id,d){
+  const it=state.items.find(i=>i.id===id);
+  it.qty=Math.max(0,it.qty+d);
+  it.low=it.qty<=it.min;
+  persist();
+  if(it.qty<=it.min&&it.qty>0)toast(`🔔 ${it.name} 库存不足，记得补充`);
+};
+
+/* --- 公约 --- */
+window.addRule=function(){
+  openSheet(`
+    <h3>📜 新建公约 <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="field"><label>标题</label><input id="f-title" placeholder="如：深夜安静公约"></div>
+    <div class="field"><label>内容</label><textarea id="f-content" placeholder="写下大家都需要遵守的约定…"></textarea></div>
+    <button class="btn btn-primary" onclick="saveRule()">发布公约</button>`);
+};
+window.saveRule=function(){
+  const title=document.getElementById('f-title').value.trim();
+  const content=document.getElementById('f-content').value.trim();
+  if(!title||!content){toast('请填写标题和内容');return;}
+  state.rules.unshift({id:uid(),title,content,agreed:[]});
+  persist();toast('已发布');closeSheet();
+};
+window.toggleAgree=function(id){
+  const r=state.rules.find(r=>r.id===id);
+  const mine=state.roommates[0]?.id;
+  const i=r.agreed.indexOf(mine);
+  if(i>=0)r.agreed.splice(i,1);else r.agreed.push(mine);
+  persist();
+};
+window.delRule=function(id){state.rules=state.rules.filter(r=>r.id!==id);persist();toast('已删除');};
+
+/* --- FAB --- */
+function fabHTML(){
+  const map={home:'addExpense',expense:'addExpense',duty:'addChore',item:'addItem',rule:'addRule'};
+  return `<button class="fab" onclick="${map[currentTab]}()">+</button>`;
+}
+
+/* 在 render 里挂 fab */
+const _origRender=render;
+render=function(){
+  const app=document.getElementById('app');
+  app.innerHTML = headerHTML() + matesStripHTML() + '<main>'+ (views[currentTab]()) +'</main>' + tabsHTML() + fabHTML();
+  bindTop();
+};
+
+render();
+</script>
+</body>
+</html>
