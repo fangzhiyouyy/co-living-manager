@@ -34,7 +34,7 @@
   /* Header */
   header{
     background:linear-gradient(135deg,var(--brand),var(--brand2));
-    color:#fff;padding:18px 20px 60px;border-radius:0 0 26px 26px;
+    color:#fff;padding:18px 20px 16px;border-radius:0 0 26px 26px;
   }
   .header-top{display:flex;align-items:center;justify-content:space-between}
   .house-name{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;cursor:pointer}
@@ -43,16 +43,16 @@
 
   /* Roommate strip */
   .mates-strip{
-    display:flex;gap:14px;overflow-x:auto;padding:0 20px;margin-top:-38px;position:relative;z-index:2;scrollbar-width:none;
+    display:flex;gap:14px;overflow-x:auto;margin-top:16px;padding-bottom:6px;scrollbar-width:none;
   }
   .mates-strip::-webkit-scrollbar{display:none}
   .mate-pill{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:58px;cursor:pointer}
   .mate-avatar{
-    width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:24px;border:3px solid #fff;box-shadow:var(--shadow);background:#fff;
+    width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:25px;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.15);
   }
-  .mate-pill span{font-size:12px;color:var(--ink);font-weight:600;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mate-add .mate-avatar{background:var(--card);color:var(--brand);font-size:28px;font-weight:700;border-style:dashed;border-color:var(--brand)}
+  .mate-pill span{font-size:12px;color:#fff;font-weight:600;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mate-add .mate-avatar{background:rgba(255,255,255,.18);color:#fff;font-size:26px;font-weight:700;border:2px dashed rgba(255,255,255,.7)}
 
   /* Tabs nav */
   nav.tabs{
@@ -190,6 +190,23 @@
   .bar-track{flex:1;height:12px;background:#F1EEE8;border-radius:6px;overflow:hidden}
   .bar-track i{display:block;height:100%;border-radius:6px;transition:width .4s}
   .bar-val{width:64px;text-align:right;font-size:13px;font-weight:700;flex-shrink:0}
+
+  /* calendar */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .cal-nav{width:28px;height:28px;border-radius:9px;border:none;background:#F4F0E9;font-size:16px;cursor:pointer;color:var(--ink);line-height:1}
+  .cal-title{font-weight:700;font-size:14px}
+  .cal-week{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px}
+  .cal-week span{text-align:center;font-size:10px;color:var(--muted);padding:2px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cal-cell{min-height:34px;border-radius:9px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:3px;cursor:pointer;position:relative;padding:5px 2px}
+  .cal-cell:active{background:#F4F0E9}
+  .cal-cell.empty{cursor:default}
+  .cal-cell.today{background:#FFF1E6}
+  .cal-cell.today .cal-num{color:var(--brand-deep);font-weight:800}
+  .cal-num{font-size:12px;font-weight:600;line-height:1}
+  .cal-cell .cal-avatar{font-size:14px;line-height:1}
+  .cal-cell .cal-dot{position:absolute;top:4px;right:5px;width:4px;height:4px;border-radius:50%;background:var(--red)}
+  .cal-cell .cal-check{position:absolute;top:3px;left:4px;width:13px;height:13px;border-radius:50%;background:var(--green);color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -213,19 +230,24 @@ const COLORS = ['#FF7A45','#4A90E2','#3BB878','#8E6FE8','#F0A23B','#E8669E','#35
 const TASKS = ['客厅','厨房','卫生间','倒垃圾','阳台','卧室'];
 
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3)}
+function pad(n){return n<10?'0'+n:''+n;}
+function fmtDate(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return fmtDate(d);}
 
 function seed(){
   const m1={id:uid(),name:'阿泽',avatar:'🐱',color:'#FF7A45'};
   const m2={id:uid(),name:'小鹿',avatar:'🦊',color:'#4A90E2'};
   const m3={id:uid(),name:'可可',avatar:'🐼',color:'#3BB878'};
+  const cur=new Date();
+  const ym=`${cur.getFullYear()}-${pad(cur.getMonth()+1)}`;
   return {
     house:{name:'阳光小窝'},
     roommates:[m1,m2,m3],
     expenses:[
-      {id:uid(),title:'6月房租',amount:4500,cat:'rent',payerId:m1.id,participants:[m1.id,m2.id,m3.id],date:'2026-06-01'},
-      {id:uid(),title:'电费',amount:186.5,cat:'elec',payerId:m2.id,participants:[m1.id,m2.id,m3.id],date:'2026-06-08'},
-      {id:uid(),title:'抽纸+洗洁精',amount:68,cat:'grocery',payerId:m3.id,participants:[m1.id,m2.id,m3.id],date:'2026-06-10'},
-      {id:uid(),title:'周末火锅',amount:220,cat:'food',payerId:m1.id,participants:[m1.id,m2.id],date:'2026-06-11'},
+      {id:uid(),title:'本月房租',amount:4500,cat:'rent',payerId:m1.id,participants:[m1.id,m2.id,m3.id],date:`${ym}-01`},
+      {id:uid(),title:'电费',amount:186.5,cat:'elec',payerId:m2.id,participants:[m1.id,m2.id,m3.id],date:daysAgo(4)},
+      {id:uid(),title:'抽纸+洗洁精',amount:68,cat:'grocery',payerId:m3.id,participants:[m1.id,m2.id,m3.id],date:daysAgo(2)},
+      {id:uid(),title:'周末火锅',amount:220,cat:'food',payerId:m1.id,participants:[m1.id,m2.id],date:daysAgo(1)},
     ],
     chores:buildWeek([m1,m2,m3]),
     items:[
@@ -238,7 +260,13 @@ function seed(){
       {id:uid(),title:'深夜安静公约',content:'23:00 后请降低音量，不外放音乐，如需加班开会请佩戴耳机。',agreed:[m1.id,m2.id]},
       {id:uid(),title:'公共区域清洁',content:'使用厨房、卫生间后及时清理，垃圾每周按值日表轮值倾倒。',agreed:[m1.id,m2.id,m3.id]},
       {id:uid(),title:'带朋友回家',content:'带朋友回家请提前在群里告知，留宿需征得全体室友同意。',agreed:[m1.id]},
-    ]
+    ],
+    records:[
+      {id:uid(),date:daysAgo(1),text:'周末一起吃了火锅 🍲',time:'19:00'},
+      {id:uid(),date:fmtDate(new Date()),text:'提醒：抽纸快用完了',time:'08:30'},
+    ],
+    doneDates:[daysAgo(1)],
+    calMonth:null,
   };
 }
 
@@ -263,14 +291,20 @@ function getTodayDayIndex(){
 let state = load();
 function load(){
   try{
-    const raw=localStorage.getItem('co-living-state');
-    if(raw) return JSON.parse(raw);
+    const raw=localStorage.getItem('co-living-state-v2');
+    if(raw) return normalize(JSON.parse(raw));
   }catch(e){}
   const s=seed();
   save(s);
   return s;
 }
-function save(s){localStorage.setItem('co-living-state',JSON.stringify(s));}
+function normalize(s){
+  if(!Array.isArray(s.records))s.records=[];
+  if(!Array.isArray(s.doneDates))s.doneDates=[];
+  if(!s.calMonth)s.calMonth=null;
+  return s;
+}
+function save(s){localStorage.setItem('co-living-state-v2',JSON.stringify(s));}
 function persist(){save(state);render();}
 
 function mateById(id){return state.roommates.find(m=>m.id===id);}
@@ -360,6 +394,112 @@ function settle(bal){
   return txns;
 }
 
+/* ============ 日历 ============ */
+function choreByDate(date){
+  const mi=(date.getDay()+6)%7;
+  return state.chores.find(c=>c.day===mi)||null;
+}
+function calendarHTML(){
+  let y,m;
+  if(state.calMonth){const p=state.calMonth.split('-');y=+p[0];m=+p[1]-1;}
+  else{const n=new Date();y=n.getFullYear();m=n.getMonth();}
+  const first=new Date(y,m,1);
+  const lead=(first.getDay()+6)%7;
+  const dim=new Date(y,m+1,0).getDate();
+  const today=new Date();
+  const cells=[];
+  for(let i=0;i<lead;i++)cells.push('<div class="cal-cell empty"></div>');
+  for(let d=1;d<=dim;d++){
+    const dt=new Date(y,m,d), ds=fmtDate(dt);
+    const chore=choreByDate(dt);
+    const a=chore?mateById(chore.assigneeId):null;
+    const isToday=(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d);
+    const hasRec=state.records.some(r=>r.date===ds);
+    const isDone=state.doneDates.includes(ds);
+    cells.push(`<div class="cal-cell ${isToday?'today':''}" onclick="openDay('${ds}')">
+      <div class="cal-num">${d}</div>
+      <div class="cal-avatar">${a?a.avatar:'·'}</div>
+      ${hasRec?'<div class="cal-dot"></div>':''}
+      ${isDone?'<span class="cal-check">✓</span>':''}
+    </div>`);
+  }
+  while(cells.length%7!==0)cells.push('<div class="cal-cell empty"></div>');
+  const prefix=`${y}-${pad(m+1)}`;
+  const monthExp=state.expenses.filter(e=>e.date.startsWith(prefix)).reduce((s,e)=>s+e.amount,0);
+  const monthRec=state.records.filter(r=>r.date.startsWith(prefix)).length;
+  return `<div class="section-title">📅 生活日历</div>
+    <div class="card">
+      <div class="cal-head">
+        <button class="cal-nav" onclick="calShift(-1)">‹</button>
+        <div class="cal-title">${y}年${m+1}月</div>
+        <button class="cal-nav" onclick="calShift(1)">›</button>
+      </div>
+      <div class="cal-week">${['一','二','三','四','五','六','日'].map(w=>`<span>${w}</span>`).join('')}</div>
+      <div class="cal-grid">${cells.join('')}</div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;justify-content:space-between">
+        <span>本月支出 ${fmt(monthExp)}</span>
+        <span>生活记录 ${monthRec} 条</span>
+      </div>
+    </div>`;
+}
+window.calShift=function(delta){
+  const now=state.calMonth?new Date(state.calMonth+'-01'):new Date();
+  const d=new Date(now.getFullYear(),now.getMonth()+delta,1);
+  state.calMonth=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+  save(state);render();
+};
+window.openDay=function(dateStr){
+  const p=dateStr.split('-').map(Number);
+  const date=new Date(p[0],p[1]-1,p[2]);
+  const chore=choreByDate(date);
+  const assignee=chore?mateById(chore.assigneeId):null;
+  const done=state.doneDates.includes(dateStr);
+  const recs=state.records.filter(r=>r.date===dateStr);
+  const exps=state.expenses.filter(e=>e.date===dateStr);
+  const weekNames=['日','一','二','三','四','五','六'];
+  openSheet(`
+    <h3>📅 ${p[1]}月${p[2]}日 周${weekNames[date.getDay()]} <button class="x" onclick="closeSheet()">×</button></h3>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line)">
+      <div style="font-weight:700;margin-bottom:8px">🧹 值日</div>
+      ${chore?`
+        <div class="row" style="padding:0;border:none">
+          <div class="mate-avatar" style="width:42px;height:42px;font-size:20px;background:#F4F0E9">${assignee.avatar}</div>
+          <div class="body"><div class="t">${chore.task}</div><div class="d">${assignee.name} 负责</div></div>
+          <button class="btn btn-sm ${done?'btn-ghost':'btn-primary'}" onclick="toggleDayDone('${dateStr}')">${done?'已完成 ✓':'完成打卡'}</button>
+        </div>`:'<div style="color:var(--muted);font-size:13px">当天暂无值日安排</div>'}
+    </div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line)">
+      <div style="font-weight:700;margin-bottom:8px">💬 生活记录</div>
+      ${recs.map(r=>`<div class="row" style="padding:8px 0"><div class="body"><div class="t">${r.text}</div><div class="d">${r.time||''}</div></div><button class="link" style="color:var(--muted)" onclick="delRecord('${r.id}')">删除</button></div>`).join('')||'<div style="color:var(--muted);font-size:13px">暂无记录，记录下今天吧</div>'}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="f-record" placeholder="记一笔，如：交了电费 / 聚餐" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;outline:none">
+        <button class="btn btn-sm btn-primary" onclick="saveRecord('${dateStr}')">添加</button>
+      </div>
+    </div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line)">
+      <div style="font-weight:700;margin-bottom:8px">🧾 当日账单</div>
+      ${exps.map(e=>expenseRow(e,true)).join('')||'<div style="color:var(--muted);font-size:13px">当日无账单</div>'}
+    </div>`);
+};
+window.toggleDayDone=function(dateStr){
+  const i=state.doneDates.indexOf(dateStr);
+  if(i>=0)state.doneDates.splice(i,1);else state.doneDates.push(dateStr);
+  save(state);render();openDay(dateStr);
+};
+window.saveRecord=function(dateStr){
+  const v=document.getElementById('f-record').value.trim();
+  if(!v){toast('请输入内容');return;}
+  const n=new Date();
+  state.records.push({id:uid(),date:dateStr,text:v,time:`${pad(n.getHours())}:${pad(n.getMinutes())}`});
+  save(state);render();openDay(dateStr);
+};
+window.delRecord=function(id){
+  const r=state.records.find(x=>x.id===id);
+  if(!r)return;
+  state.records=state.records.filter(x=>x.id!==id);
+  save(state);render();openDay(r.date);
+};
+
 /* ============ 渲染 ============ */
 let currentTab='home';
 const tabDefs=[
@@ -372,7 +512,7 @@ const tabDefs=[
 
 function render(){
   const app=document.getElementById('app');
-  app.innerHTML = headerHTML() + matesStripHTML() + '<main>'+ (views[currentTab]()) +'</main>' + tabsHTML();
+  app.innerHTML = headerHTML() + '<main>'+ (views[currentTab]()) +'</main>' + tabsHTML();
   bindTop();
 }
 
@@ -383,7 +523,8 @@ function headerHTML(){
       <div class="house-name" onclick="editHouse()">🏠 ${state.house.name} <span class="edit-hint">✎</span></div>
       <div class="header-badge">${state.roommates.length} 位室友</div>
     </div>
-    ${lowCount?`<div style="margin-top:10px;font-size:12px;opacity:.92">🔔 有 ${lowCount} 件公共物品库存不足</div>`:''}
+    ${lowCount?`<div style="margin-top:12px;font-size:12px;opacity:.92">🔔 有 ${lowCount} 件公共物品库存不足</div>`:''}
+    ${matesStripHTML()}
   </header>`;
 }
 
@@ -391,7 +532,7 @@ function matesStripHTML(){
   return `<div class="mates-strip">
     ${state.roommates.map(m=>`
       <div class="mate-pill" onclick="editMate('${m.id}')">
-        <div class="mate-avatar" style="background:${m.color}22">${m.avatar}</div>
+        <div class="mate-avatar">${m.avatar}</div>
         <span>${m.name}</span>
       </div>`).join('')}
     <div class="mate-pill mate-add" onclick="editMate()">
@@ -423,6 +564,8 @@ const views={
         <div class="stat green"><div class="k">🧹 今日值日</div><div class="v" style="font-size:18px">${todayChore?mateById(todayChore.assigneeId).avatar+' '+mateById(todayChore.assigneeId).name:'—'}</div></div>
         <div class="stat purple"><div class="k">📦 待补货</div><div class="v">${low.length}<small> 件</small></div></div>
       </div>
+
+      ${calendarHTML()}
 
       ${categoryChart()}
 
@@ -771,7 +914,7 @@ function fabHTML(){
 const _origRender=render;
 render=function(){
   const app=document.getElementById('app');
-  app.innerHTML = headerHTML() + matesStripHTML() + '<main>'+ (views[currentTab]()) +'</main>' + tabsHTML() + fabHTML();
+  app.innerHTML = headerHTML() + '<main>'+ (views[currentTab]()) +'</main>' + tabsHTML() + fabHTML();
   bindTop();
 };
 
